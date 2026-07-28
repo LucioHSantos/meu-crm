@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-white">
+      {% if form.instance.pk %}Editar Contato{% else %}Novo Contato{% endif %}
+    </h1>
+  </div>
+
+  <div class="card bg-gray-800 rounded-2xl p-6">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="md:col-span-2">
+          <label for="id_name" class="block text-sm font-medium text-gray-300 mb-1">Nome *</label>
+          <input type="text" name="name" id="id_name" value="{{ form.instance.name|default:'' }}" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Nome completo" />
+          {% if form.name.errors %}
+          <p class="mt-1 text-sm text-red-400">{{ form.name.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="id_email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+          <input type="email" name="email" id="id_email" value="{{ form.instance.email|default:'' }}" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="email@exemplo.com" />
+          {% if form.email.errors %}
+          <p class="mt-1 text-sm text-red-400">{{ form.email.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="id_phone" class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
+          <input type="text" name="phone" id="id_phone" value="{{ form.instance.phone|default:'' }}" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="(00) 00000-0000" />
+          {% if form.phone.errors %}
+          <p class="mt-1 text-sm text-red-400">{{ form.phone.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="id_company" class="block text-sm font-medium text-gray-300 mb-1">Empresa</label>
+          <input type="text" name="company" id="id_company" value="{{ form.instance.company|default:'' }}" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Nome da empresa" />
+          {% if form.company.errors %}
+          <p class="mt-1 text-sm text-red-400">{{ form.company.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="id_position" class="block text-sm font-medium text-gray-300 mb-1">Cargo</label>
+          <input type="text" name="position" id="id_position" value="{{ form.instance.position|default:'' }}" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Cargo do contato" />
+          {% if form.position.errors %}
+          <p class="mt-1 text-sm text-red-400">{{ form.position.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="id_status" class="block text-sm font-medium text-gray-300 mb-1">Status</label>
+          <select name="status" id="id_status" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            <option value="">Selecione...</option>
+            <option value="lead" {% if form.instance.status == "lead" %}selected{% endif %}>Lead</option>
+            <option value="prospect" {% if form.instance.status == "prospect" %}selected{% endif %}>Prospect</option>
+            <option value="client" {% if form.instance.status == "client" %}selected{% endif %}>Cliente</option>
+          </select>
+          {% if form.status.errors %}
+          <p class="mt-1 text-sm text-red-400">{{ form.status.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="id_source" class="block text-sm font-medium text-gray-300 mb-1">Origem</label>
+          <select name="source" id="id_source" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            <option value="">Selecione...</option>
+            <option value="website" {% if form.instance.source == "website" %}selected{% endif %}>Website</option>
+            <option value="referral" {% if form.instance.source == "referral" %}selected{% endif %}>Indicação</option>
+            <option value="social_media" {% if form.instance.source == "social_media" %}selected{% endif %}>Redes Sociais</option>
+            <option value="phone" {% if form.instance.source == "phone" %}selected{% endif %}>Telefone</option>
+            <option value="other" {% if form.instance.source == "other" %}selected{% endif %}>Outro</option>
+          </select>
+          {% if form.source.errors %}
+          <p class="mt-1 text-sm text-red-400">{{ form.source.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div>
+          <label for="id_assigned_to" class="block text-sm font-medium text-gray-300 mb-1">Responsável</label>
+          <select name="assigned_to" id="id_assigned_to" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+            <option value="">Selecione...</option>
+            {% for user in users %}
+            <option value="{{ user.pk }}" {% if form.instance.assigned_to.pk == user.pk %}selected{% endif %}>{{ user.get_full_name|default:user.username }}</option>
+            {% endfor %}
+          </select>
+          {% if form.assigned_to.errors %}
+          <p class="mt-1 text-sm text-red-400">{{ form.assigned_to.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="md:col-span-2">
+          <label for="id_address" class="block text-sm font-medium text-gray-300 mb-1">Endereço</label>
+          <textarea name="address" id="id_address" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Endereço completo"></textarea>
+          {% if form.address.errors %}
+          <p class="mt-1 text-sm text-red-400">{{ form.address.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <div class="md:col-span-2">
+          <label for="id_notes" class="block text-sm font-medium text-gray-300 mb-1">Notas</label>
+          <textarea name="notes" id="id_notes" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Observações sobre o contato..."></textarea>
+          {% if form.notes.errors %}
+          <p class="mt-1 text-sm text-red-400">{{ form.notes.errors.0 }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+      <div class="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+        {% for error in form.non_field_errors %}
+        <p class="text-sm text-red-400">{{ error }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="mt-8 flex items-center justify-end gap-4">
+        <a href="{% url 'contacts:list' %}" class="px-6 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white rounded-lg transition-colors">
+          Cancelar
+        </a>
+        <button type="submit" class="px-6 py-2 bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg transition-colors">
+          Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

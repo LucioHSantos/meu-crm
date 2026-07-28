@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="chatApp()">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-white">Testar Agente IA</h1>
+    <p class="mt-2 text-gray-400">Converse com o agente em ambiente de teste para validar suas respostas.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" style="height: calc(100vh - 200px);">
+    <!-- Chat Interface -->
+    <div class="lg:col-span-2 flex flex-col bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      <!-- Messages Area -->
+      <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <template x-if="messages.length === 0">
+          <div class="flex items-center justify-center h-full">
+            <div class="text-center">
+              <svg class="mx-auto h-10 w-10 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"/>
+              </svg>
+              <p class="mt-2 text-gray-500 text-sm">Envie uma mensagem para iniciar a conversa</p>
+            </div>
+          </div>
+        </template>
+
+        <template x-for="(msg, index) in messages" :key="index">
+          <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+            <div :class="msg.role === 'user'
+              ? 'bg-yellow-500 text-black rounded-l-xl rounded-br-xl'
+              : 'bg-gray-700 text-white rounded-r-xl rounded-bl-xl'"
+                 class="max-w-[70%] px-4 py-3 shadow">
+              <p class="text-sm whitespace-pre-wrap" x-text="msg.text"></p>
+              <p class="text-xs mt-1 opacity-60" x-text="msg.time"></p>
+            </div>
+          </div>
+        </template>
+
+        <!-- Loading Indicator -->
+        <template x-if="loading">
+          <div class="flex justify-start">
+            <div class="bg-gray-700 text-white rounded-r-xl rounded-bl-xl px-4 py-3">
+              <div class="flex items-center gap-2">
+                <svg class="animate-spin h-4 w-4 text-yellow-500" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <span class="text-sm text-gray-400">Digitando...</span>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Input Area -->
+      <div class="p-4 border-t border-gray-700">
+        <form @submit.prevent="sendMessage()" class="flex gap-3">
+          <input id="message-input" type="text" x-model="newMessage"
+                 @keydown.enter.prevent="sendMessage()"
+                 class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition"
+                 placeholder="Digite sua mensagem..." :disabled="loading">
+          <button type="submit"
+                  :disabled="loading || !newMessage.trim()"
+                  class="px-4 py-2.5 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold rounded-lg transition">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Context Panel -->
+    <div class="flex flex-col gap-4">
+      <!-- System Prompt Preview -->
+      <div class="bg-gray-800 rounded-xl border border-gray-700 p-4">
+        <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+          <svg class="w-4 h-4 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z"/>
+          </svg>
+          Prompt do Sistema
+        </h3>
+        <div class="bg-gray-700/50 rounded-lg p-3 max-h-32 overflow-y-auto">
+          <p class="text-xs text-gray-300 whitespace-pre-wrap">{{ agent.system_prompt|default:"Nenhum prompt configurado."|truncatechars:300 }}</p>
+        </div>
+      </div>
+
+      <!-- Knowledge Base Items -->
+      <div class="bg-gray-800 rounded-xl border border-gray-700 p-4 flex-1 overflow-hidden flex flex-col">
+        <h3 class="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+          <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/>
+          </svg>
+          Base de Conhecimento
+          <span class="text-xs text-gray-500 font-normal ml-auto">{{ knowledge_items|length }} itens</span>
+        </h3>
+        <div class="space-y-2 overflow-y-auto flex-1">
+          {% for item in knowledge_items %}
+          <div class="bg-gray-700/50 rounded-lg p-2.5">
+            <p class="text-xs font-medium text-white line-clamp-1">{{ item.question }}</p>
+            <p class="text-xs text-gray-400 line-clamp-2 mt-0.5">{{ item.answer|truncatechars:100 }}</p>
+          </div>
+          {% empty %}
+          <p class="text-xs text-gray-500 text-center py-4">Nenhum item na base de conhecimento.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Clear Button -->
+      <button @click="clearChat()"
+              class="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition">
+        Limpar Conversa
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function chatApp() {
+  return {
+    messages: [],
+    newMessage: '',
+    loading: false,
+
+    sendMessage() {
+      const text = this.newMessage.trim();
+      if (!text || this.loading) return;
+
+      this.messages.push({
+        role: 'user',
+        text: text,
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      });
+
+      this.newMessage = '';
+      this.loading = true;
+      this.scrollToBottom();
+
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+        || document.cookie.match(/csrftoken=([^;]+)/)?.[1]
+        || '{{ csrf_token }}';
+
+      fetch('{% url "ai_agent:training_test_send" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ message: text })
+      })
+      .then(response => response.json())
+      .then(data => {
+        this.messages.push({
+          role: 'assistant',
+          text: data.response || data.message || 'Desculpe, não consegui processar sua mensagem.',
+          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        });
+        this.loading = false;
+        this.scrollToBottom();
+      })
+      .catch(error => {
+        this.messages.push({
+          role: 'assistant',
+          text: 'Erro ao conectar com o agente. Tente novamente.',
+          time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        });
+        this.loading = false;
+        this.scrollToBottom();
+      });
+    },
+
+    clearChat() {
+      this.messages = [];
+    },
+
+    scrollToBottom() {
+      this.$nextTick(() => {
+        const el = document.getElementById('chat-messages');
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+    }
+  };
+}
+</script>
+{% endblock %}

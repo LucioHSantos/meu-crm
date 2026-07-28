@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Configuração do Agente IA{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-white">Configuração do Agente IA</h1>
+    <p class="mt-2 text-gray-400">Configure o comportamento e personalidade do seu assistente virtual.</p>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="lg:col-span-2 space-y-6">
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <h2 class="text-xl font-semibold text-white mb-6">Configurações Gerais</h2>
+
+          <div class="space-y-5">
+            <div>
+              <label for="name" class="block text-sm font-medium text-gray-300 mb-1">Nome do Agente</label>
+              <input type="text" id="name" name="name"
+                     value="{{ form.instance.name|default:'' }}"
+                     class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition"
+                     placeholder="Ex: Assistente Virtual">
+            </div>
+
+            <div>
+              <label for="business_name" class="block text-sm font-medium text-gray-300 mb-1">Nome do Negócio</label>
+              <input type="text" id="business_name" name="business_name"
+                     value="{{ form.instance.business_name|default:'' }}"
+                     class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition"
+                     placeholder="Ex: Minha Empresa LTDA">
+            </div>
+
+            <div>
+              <label for="business_description" class="block text-sm font-medium text-gray-300 mb-1">Descrição do Negócio</label>
+              <textarea id="business_description" name="business_description" rows="3"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition"
+                        placeholder="Descreva brevemente o que sua empresa faz...">{{ form.instance.business_description|default:'' }}</textarea>
+            </div>
+
+            <div>
+              <label for="system_prompt" class="block text-sm font-medium text-gray-300 mb-1">Prompt do Sistema</label>
+              <textarea id="system_prompt" name="system_prompt" rows="8"
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition font-mono text-sm"
+                        placeholder="Você é um assistente virtual...">{{ form.instance.system_prompt|default:'' }}</textarea>
+              <p class="mt-1.5 text-xs text-gray-500">Instrução principal que define o comportamento do agente.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label for="ollama_model" class="block text-sm font-medium text-gray-300 mb-1">Modelo Ollama</label>
+                <input type="text" id="ollama_model" name="ollama_model"
+                       value="{{ form.instance.ollama_model|default:'llama3' }}"
+                       class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition"
+                       placeholder="llama3">
+              </div>
+              <div>
+                <label for="temperature" class="block text-sm font-medium text-gray-300 mb-1">Temperatura</label>
+                <input type="number" id="temperature" name="temperature"
+                       value="{{ form.instance.temperature|default:'0.7' }}"
+                       step="0.1" min="0" max="2"
+                       class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition">
+              </div>
+              <div>
+                <label for="max_tokens" class="block text-sm font-medium text-gray-300 mb-1">Max Tokens</label>
+                <input type="number" id="max_tokens" name="max_tokens"
+                       value="{{ form.instance.max_tokens|default:'1024' }}"
+                       min="1"
+                       class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition">
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+              <input type="checkbox" id="is_active" name="is_active" value="true"
+                     {% if form.instance.is_active %}checked{% endif %}
+                     class="w-5 h-5 bg-gray-700 border-gray-600 rounded text-yellow-500 focus:ring-yellow-500 focus:ring-offset-gray-800 cursor-pointer">
+              <label for="is_active" class="text-sm font-medium text-gray-300 cursor-pointer">Agente ativo</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button type="submit"
+                  class="px-6 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-semibold rounded-lg transition focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+            Salvar Configurações
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <h2 class="text-xl font-semibold text-white mb-6">Estatísticas</h2>
+          <div class="space-y-4">
+            <div class="bg-gray-700/50 rounded-lg p-4">
+              <div class="flex items-center gap-3">
+                <div class="p-2 bg-yellow-500/10 rounded-lg">
+                  <svg class="w-6 h-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/></svg>
+                </div>
+                <div>
+                  <p class="text-2xl font-bold text-white">{{ knowledge_count }}</p>
+                  <p class="text-sm text-gray-400">Itens na Base</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-gray-700/50 rounded-lg p-4">
+              <div class="flex items-center gap-3">
+                <div class="p-2 bg-blue-500/10 rounded-lg">
+                  <svg class="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"/></svg>
+                </div>
+                <div>
+                  <p class="text-2xl font-bold text-white">{{ training_count }}</p>
+                  <p class="text-sm text-gray-400">Dados de Treinamento</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-gray-700/50 rounded-lg p-4">
+              <div class="flex items-center gap-3">
+                <div class="p-2 bg-green-500/10 rounded-lg">
+                  <svg class="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/></svg>
+                </div>
+                <div>
+                  <p class="text-2xl font-bold text-white">{{ active_conversations }}</p>
+                  <p class="text-sm text-gray-400">Conversas Ativas</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

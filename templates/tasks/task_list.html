@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Tarefas{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+    <h1 class="text-2xl font-bold text-white">Tarefas</h1>
+    <a href="{% url 'tasks:create' %}" class="inline-flex items-center px-4 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg transition-colors text-sm">
+        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        Nova Tarefa
+    </a>
+</div>
+
+<div class="bg-gray-800 rounded-2xl p-4 mb-6">
+    <form method="get" class="flex flex-col sm:flex-row gap-4">
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Status</label>
+            {{ filter_form.status }}
+        </div>
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Prioridade</label>
+            {{ filter_form.priority }}
+        </div>
+        <div class="flex items-end">
+            <button type="submit" class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm font-medium">
+                Filtrar
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="space-y-3">
+    {% for task in tasks %}
+    <div class="bg-gray-800 rounded-xl p-4 border-l-4 {% if task.priority == 'urgent' %}border-red-500{% elif task.priority == 'high' %}border-orange-500{% elif task.priority == 'medium' %}border-blue-500{% else %}border-gray-500{% endif %} {% if task.pk in overdue_task_ids %}bg-red-500/5{% endif %} hover:bg-gray-750 transition-colors">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                    <a href="{% url 'tasks:detail' pk=task.pk %}" class="text-white font-semibold hover:text-yellow-400 transition-colors truncate">{{ task.title }}</a>
+
+                    {% if task.pk in overdue_task_ids %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">Atrasada</span>
+                    {% endif %}
+
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                        {% if task.status == 'pending' %}bg-yellow-500/20 text-yellow-400 border border-yellow-500/30
+                        {% elif task.status == 'in_progress' %}bg-blue-500/20 text-blue-400 border border-blue-500/30
+                        {% else %}bg-green-500/20 text-green-400 border border-green-500/30{% endif %}">
+                        {{ task.get_status_display }}
+                    </span>
+
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                        {% if task.priority == 'urgent' %}bg-red-500/20 text-red-400 border border-red-500/30
+                        {% elif task.priority == 'high' %}bg-orange-500/20 text-orange-400 border border-orange-500/30
+                        {% elif task.priority == 'medium' %}bg-blue-500/20 text-blue-400 border border-blue-500/30
+                        {% else %}bg-gray-500/20 text-gray-400 border border-gray-500/30{% endif %}">
+                        {{ task.get_priority_display }}
+                    </span>
+                </div>
+
+                {% if task.description %}
+                <p class="text-sm text-gray-400 truncate mt-1">{{ task.description|truncatewords:15 }}</p>
+                {% endif %}
+
+                <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                    {% if task.due_date %}
+                    <span class="inline-flex items-center {% if task.pk in overdue_task_ids %}text-red-400{% endif %}">
+                        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+                        {{ task.due_date|date:"d/m/Y H:i" }}
+                    </span>
+                    {% endif %}
+
+                    {% if task.assigned_to %}
+                    <span class="inline-flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                        {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}
+                    </span>
+                    {% endif %}
+
+                    {% if task.contact %}
+                    <span class="inline-flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" /></svg>
+                        {{ task.contact.name }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <form method="post" action="{% url 'tasks:toggle_status' pk=task.pk %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="p-2 rounded-lg transition-colors
+                        {% if task.status == 'completed' %}bg-green-500/10 text-green-400 hover:bg-green-500/20
+                        {% elif task.status == 'in_progress' %}bg-blue-500/10 text-blue-400 hover:bg-blue-500/20
+                        {% else %}bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20{% endif %}" title="Alterar status">
+                        {% if task.status == 'completed' %}
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        {% elif task.status == 'in_progress' %}
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        {% else %}
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" /></svg>
+                        {% endif %}
+                    </button>
+                </form>
+
+                <a href="{% url 'tasks:edit' pk=task.pk %}" class="p-2 rounded-lg bg-gray-700/50 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors" title="Editar">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                </a>
+
+                <a href="{% url 'tasks:delete' pk=task.pk %}" class="p-2 rounded-lg bg-gray-700/50 text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Excluir">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="bg-gray-800 rounded-2xl p-12 text-center">
+        <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <h3 class="text-lg font-medium text-gray-400 mb-2">Nenhuma tarefa encontrada</h3>
+        <p class="text-gray-500 mb-6">Crie uma nova tarefa para começar.</p>
+        <a href="{% url 'tasks:create' %}" class="inline-flex items-center px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg transition-colors text-sm">
+            <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+            Nova Tarefa
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Excluir Item - {{ item.question|truncatewords:5 }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto mt-8">
+    <div class="bg-gray-800 rounded-2xl p-8 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+            <svg class="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+        </div>
+
+        <h2 class="text-xl font-bold text-white mb-2">Excluir Item da Base de Conhecimento</h2>
+        <p class="text-gray-400 mb-2">Tem certeza que deseja excluir este item?</p>
+
+        <div class="bg-gray-700/50 rounded-xl p-4 mb-6 text-left">
+            <p class="text-sm text-gray-400 mb-1">Pergunta:</p>
+            <p class="text-white font-medium">{{ item.question }}</p>
+            <p class="text-sm text-gray-400 mt-2 mb-1">Categoria:</p>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">{{ item.get_category_display }}</span>
+        </div>
+
+        <p class="text-sm text-red-400 mb-6">Esta ação não pode ser desfeita.</p>
+
+        <div class="flex items-center justify-center gap-4">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-lg transition-colors">
+                    Excluir
+                </button>
+            </form>
+            <a href="{% url 'ai_agent:knowledge_list' %}" class="bg-gray-700 hover:bg-gray-600 text-white font-medium px-6 py-2.5 rounded-lg transition-colors">
+                Cancelar
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

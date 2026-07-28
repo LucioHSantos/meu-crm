@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <a href="{% url 'deals:list' %}" class="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white transition">
+        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        </svg>
+      </a>
+      <div>
+        <h1 class="text-2xl font-bold text-white">{{ deal.title }}</h1>
+        <p class="mt-1 text-sm text-gray-400">Criado em {{ deal.created_at|date:"d/m/Y \à\s H:i" }}</p>
+      </div>
+    </div>
+    <div class="flex gap-3">
+      <a href="{% url 'deals:edit' deal.pk %}"
+        class="inline-flex items-center gap-2 rounded-lg bg-gray-700 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-600 transition">
+        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+        </svg>
+        Editar
+      </a>
+      <a href="{% url 'deals:delete' deal.pk %}"
+        class="inline-flex items-center gap-2 rounded-lg bg-gray-700 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/10 transition">
+        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+        </svg>
+        Excluir
+      </a>
+    </div>
+  </div>
+
+  <div class="bg-gray-800 rounded-2xl p-4">
+    <div class="flex items-center justify-between">
+      {% with stage_num_val=deal.stage_num %}
+      {% for s in "prospecting,qualification,proposal,negotiation,closed_won" %}
+      <div class="flex items-center {% if not forloop.last %}flex-1{% endif %}">
+        <div class="flex items-center gap-2">
+          <div class="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold
+            {% if s == deal.stage %}
+              bg-yellow-500 text-gray-900
+            {% elif forloop.counter < stage_num_val %}
+              bg-yellow-500/20 text-yellow-400
+            {% else %}
+              bg-gray-700 text-gray-500
+            {% endif %}">
+            {{ forloop.counter }}
+          </div>
+          <span class="hidden lg:inline text-xs
+            {% if s == deal.stage %}text-yellow-400 font-medium{% else %}text-gray-500{% endif %}">
+            {% if s == "prospecting" %}Prospectando{% elif s == "qualification" %}Qualificação{% elif s == "proposal" %}Proposta{% elif s == "negotiation" %}Negociação{% elif s == "closed_won" %}Fechado{% endif %}
+          </span>
+        </div>
+        {% if not forloop.last %}
+        <div class="mx-3 h-0.5 flex-1
+          {% if forloop.counter < stage_num_val %}bg-yellow-500/30{% else %}bg-gray-700{% endif %}"></div>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% endwith %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div class="space-y-6 lg:col-span-2">
+      <div class="bg-gray-800 rounded-2xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-6">Informações do Negócio</h2>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div class="sm:col-span-2">
+            <h3 class="text-3xl font-bold text-yellow-400">R$ {{ deal.value|floatformat:2|intcomma }}</h3>
+            <p class="mt-1 text-xs text-gray-400">Valor do negócio</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-400">Estágio</p>
+            <div class="mt-1">
+              {% if deal.stage == "prospecting" %}
+              <span class="inline-flex items-center rounded-full bg-gray-600 px-2.5 py-1 text-xs font-medium text-gray-200">Prospectando</span>
+              {% elif deal.stage == "qualification" %}
+              <span class="inline-flex items-center rounded-full bg-blue-600 px-2.5 py-1 text-xs font-medium text-blue-200">Qualificação</span>
+              {% elif deal.stage == "proposal" %}
+              <span class="inline-flex items-center rounded-full bg-yellow-600 px-2.5 py-1 text-xs font-medium text-yellow-200">Proposta</span>
+              {% elif deal.stage == "negotiation" %}
+              <span class="inline-flex items-center rounded-full bg-orange-600 px-2.5 py-1 text-xs font-medium text-orange-200">Negociação</span>
+              {% elif deal.stage == "closed_won" %}
+              <span class="inline-flex items-center rounded-full bg-green-600 px-2.5 py-1 text-xs font-medium text-green-200">Fechado (Ganho)</span>
+              {% elif deal.stage == "closed_lost" %}
+              <span class="inline-flex items-center rounded-full bg-red-600 px-2.5 py-1 text-xs font-medium text-red-200">Fechado (Perdido)</span>
+              {% endif %}
+            </div>
+          </div>
+          <div>
+            <p class="text-sm text-gray-400">Prioridade</p>
+            <div class="mt-1">
+              {% if deal.priority == "low" %}
+              <span class="inline-flex items-center rounded-full bg-gray-600 px-2.5 py-1 text-xs font-medium text-gray-200">Baixa</span>
+              {% elif deal.priority == "medium" %}
+              <span class="inline-flex items-center rounded-full bg-blue-600 px-2.5 py-1 text-xs font-medium text-blue-200">Média</span>
+              {% elif deal.priority == "high" %}
+              <span class="inline-flex items-center rounded-full bg-orange-600 px-2.5 py-1 text-xs font-medium text-orange-200">Alta</span>
+              {% elif deal.priority == "urgent" %}
+              <span class="inline-flex items-center rounded-full bg-red-600 px-2.5 py-1 text-xs font-medium text-red-200">Urgente</span>
+              {% endif %}
+            </div>
+          </div>
+          <div>
+            <p class="text-sm text-gray-400">Contato</p>
+            {% if deal.contact %}
+            <a href="{% url 'contacts:detail' deal.contact.pk %}" class="mt-1 inline-flex items-center gap-1.5 text-sm text-yellow-400 hover:text-yellow-300 transition">
+              <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6V5.25A2.25 2.25 0 0 0 11.25 3H6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 6 21h2.25a2.25 2.25 0 0 0 2.25-2.25V18M13.5 6h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18V8.25A2.25 2.25 0 0 1 6 6h2.25" />
+              </svg>
+              {{ deal.contact }}
+            </a>
+            {% else %}
+            <p class="mt-1 text-sm text-gray-500">—</p>
+            {% endif %}
+          </div>
+          <div>
+            <p class="text-sm text-gray-400">Responsável</p>
+            <p class="mt-1 text-sm text-white">{% if deal.assigned_to %}{{ deal.assigned_to.get_full_name|default:deal.assigned_to.username }}{% else %}<span class="text-gray-500">—</span>{% endif %}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-400">Previsão de Fechamento</p>
+            <p class="mt-1 text-sm text-white">{% if deal.expected_close_date %}{{ deal.expected_close_date|date:"d/m/Y" }}{% else %}<span class="text-gray-500">—</span>{% endif %}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-400">Data de Fechamento</p>
+            <p class="mt-1 text-sm text-white">{% if deal.closed_date %}{{ deal.closed_date|date:"d/m/Y" }}{% else %}<span class="text-gray-500">—</span>{% endif %}</p>
+          </div>
+          {% if deal.description %}
+          <div class="sm:col-span-2">
+            <p class="text-sm text-gray-400">Descrição</p>
+            <p class="mt-1 text-sm text-gray-300 whitespace-pre-wrap">{{ deal.description }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="bg-gray-800 rounded-2xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-6">Atividades</h2>
+
+        {% if activities %}
+        <div class="space-y-4">
+          {% for activity in activities %}
+          <div class="flex gap-4">
+            <div class="flex-shrink-0">
+              {% if activity.activity_type == "note" %}
+              <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20">
+                <svg class="h-4 w-4 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>
+              </div>
+              {% elif activity.activity_type == "call" %}
+              <div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/20">
+                <svg class="h-4 w-4 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                </svg>
+              </div>
+              {% elif activity.activity_type == "email" %}
+              <div class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/20">
+                <svg class="h-4 w-4 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                </svg>
+              </div>
+              {% elif activity.activity_type == "meeting" %}
+              <div class="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-500/20">
+                <svg class="h-4 w-4 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                </svg>
+              </div>
+              {% else %}
+              <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-500/20">
+                <svg class="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </div>
+              {% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-white">{{ activity.title }}</p>
+              {% if activity.description %}
+              <p class="mt-1 text-sm text-gray-400">{{ activity.description }}</p>
+              {% endif %}
+              <div class="mt-2 flex items-center gap-3 text-xs text-gray-500">
+                {% if activity.created_by %}
+                <span>{{ activity.created_by.get_full_name|default:activity.created_by.username }}</span>
+                {% endif %}
+                <span>{{ activity.created_at|date:"d/m/Y H:i" }}</span>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">Nenhuma atividade registrada.</p>
+        {% endif %}
+
+        <div class="mt-6 border-t border-gray-700 pt-6">
+          <h3 class="text-sm font-medium text-white mb-4">Adicionar Atividade</h3>
+          <form method="post" action="{% url 'deals:activity_add' deal.pk %}" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1">Tipo</label>
+                <select name="activity_type"
+                  class="w-full rounded-lg bg-gray-700 border-gray-600 text-white text-sm focus:border-yellow-500 focus:ring-yellow-500">
+                  <option value="note">Nota</option>
+                  <option value="call">Ligação</option>
+                  <option value="email">Email</option>
+                  <option value="meeting">Reunião</option>
+                  <option value="task">Tarefa</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1">Título</label>
+                <input type="text" name="title" required
+                  class="w-full rounded-lg bg-gray-700 border-gray-600 text-white text-sm focus:border-yellow-500 focus:ring-yellow-500">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-1">Descrição</label>
+              <textarea name="description" rows="3"
+                class="w-full rounded-lg bg-gray-700 border-gray-600 text-white text-sm focus:border-yellow-500 focus:ring-yellow-500"></textarea>
+            </div>
+            <button type="submit"
+              class="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2.5 text-sm font-medium text-gray-900 hover:bg-yellow-400 transition">
+              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Adicionar
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div class="bg-gray-800 rounded-2xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-4">Ações Rápidas</h2>
+        <div class="space-y-2">
+          <h3 class="text-sm font-medium text-gray-400 mb-2">Alterar Estágio</h3>
+          <div class="grid grid-cols-2 gap-2">
+            {% if deal.stage != "prospecting" %}
+            <form method="post" action="{% url 'deals:stage_update' deal.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="stage" value="prospecting">
+              <button type="submit" class="w-full rounded-lg bg-gray-700 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-gray-600 transition text-left">
+                → Prospectando
+              </button>
+            </form>
+            {% endif %}
+            {% if deal.stage != "qualification" %}
+            <form method="post" action="{% url 'deals:stage_update' deal.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="stage" value="qualification">
+              <button type="submit" class="w-full rounded-lg bg-gray-700 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-gray-600 transition text-left">
+                → Qualificação
+              </button>
+            </form>
+            {% endif %}
+            {% if deal.stage != "proposal" %}
+            <form method="post" action="{% url 'deals:stage_update' deal.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="stage" value="proposal">
+              <button type="submit" class="w-full rounded-lg bg-gray-700 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-gray-600 transition text-left">
+                → Proposta
+              </button>
+            </form>
+            {% endif %}
+            {% if deal.stage != "negotiation" %}
+            <form method="post" action="{% url 'deals:stage_update' deal.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="stage" value="negotiation">
+              <button type="submit" class="w-full rounded-lg bg-gray-700 px-3 py-2 text-xs font-medium text-gray-300 hover:bg-gray-600 transition text-left">
+                → Negociação
+              </button>
+            </form>
+            {% endif %}
+            {% if deal.stage != "closed_won" %}
+            <form method="post" action="{% url 'deals:stage_update' deal.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="stage" value="closed_won">
+              <button type="submit" class="w-full rounded-lg bg-green-600/20 px-3 py-2 text-xs font-medium text-green-400 hover:bg-green-600/30 transition text-left">
+                → Fechado (Ganho)
+              </button>
+            </form>
+            {% endif %}
+            {% if deal.stage != "closed_lost" %}
+            <form method="post" action="{% url 'deals:stage_update' deal.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="stage" value="closed_lost">
+              <button type="submit" class="w-full rounded-lg bg-red-600/20 px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-600/30 transition text-left">
+                → Fechado (Perdido)
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {% if deal.contact %}
+      <div class="bg-gray-800 rounded-2xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-4">Contato Relacionado</h2>
+        <a href="{% url 'contacts:detail' deal.contact.pk %}" class="block rounded-xl bg-gray-700 p-4 hover:bg-gray-600 transition">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400">
+              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-white">{{ deal.contact }}</p>
+              {% if deal.contact.email %}
+              <p class="text-xs text-gray-400">{{ deal.contact.email }}</p>
+              {% endif %}
+            </div>
+          </div>
+        </a>
+      </div>
+      {% endif %}
+
+      <div class="bg-gray-800 rounded-2xl p-6">
+        <h2 class="text-sm font-medium text-gray-400 mb-2">Valor do Negócio</h2>
+        <p class="text-3xl font-bold text-yellow-400">R$ {{ deal.value|floatformat:2|intcomma }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

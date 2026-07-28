@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="conversationDetail()">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" style="height: calc(100vh - 160px);">
+
+    <div class="lg:col-span-2 flex flex-col bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      {% if conversation.status == 'waiting_human' %}
+      <div class="bg-orange-500/10 border-b border-orange-500/20 px-4 py-3 flex items-center gap-3">
+        <svg class="w-5 h-5 text-orange-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+        </svg>
+        <p class="text-sm text-orange-300 font-medium">Você está atendendo esta conversa.</p>
+      </div>
+      {% endif %}
+
+      <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-3">
+        {% for msg in messages_list %}
+        <div class="flex {% if msg.sender_type == 'user' %}justify-end{% else %}justify-start{% endif %}">
+          <div class="max-w-[70%] px-4 py-3 rounded-xl shadow
+            {% if msg.sender_type == 'user' %}
+              bg-yellow-500 text-black rounded-l-xl rounded-br-xl
+            {% elif msg.sender_type == 'human_agent' %}
+              bg-blue-500 text-white rounded-r-xl rounded-bl-xl
+            {% else %}
+              bg-gray-700 text-white rounded-r-xl rounded-bl-xl
+            {% endif %}">
+            {% if msg.sender_type == 'human_agent' %}
+            <p class="text-xs font-semibold text-blue-200 mb-1">Atendente</p>
+            {% endif %}
+            <p class="text-sm whitespace-pre-wrap">{{ msg.content }}</p>
+            <p class="text-xs mt-1 {% if msg.sender_type == 'user' %}text-yellow-800{% else %}text-gray-400{% endif %} opacity-70">
+              {{ msg.created_at|time:"H:i" }}
+            </p>
+          </div>
+        </div>
+        {% empty %}
+        <div class="flex items-center justify-center h-full">
+          <p class="text-gray-500 text-sm">Nenhuma mensagem ainda.</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if conversation.status == 'waiting_human' %}
+      <div class="p-4 border-t border-gray-700">
+        <form method="post" class="flex gap-3">
+          {% csrf_token %}
+          <input type="text" name="content"
+                 class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2.5 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition"
+                 placeholder="Digite sua mensagem como atendente..." required>
+          <button type="submit"
+                  class="px-4 py-2.5 bg-blue-500 hover:bg-blue-400 text-white font-semibold rounded-lg transition">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="flex flex-col gap-4 overflow-y-auto">
+      <div class="bg-gray-800 rounded-xl border border-gray-700 p-4">
+        <h3 class="text-sm font-semibold text-white mb-3">Contato</h3>
+        <div class="space-y-3">
+          <div>
+            <p class="text-xs text-gray-500">Nome</p>
+            <p class="text-sm text-white">{{ conversation.contact.name|default:"Não informado" }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500">Telefone</p>
+            <p class="text-sm text-white">{{ conversation.contact.phone|default:"Não informado" }}</p>
+          </div>
+          {% if conversation.contact.email %}
+          <div>
+            <p class="text-xs text-gray-500">Email</p>
+            <p class="text-sm text-white">{{ conversation.contact.email }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="bg-gray-800 rounded-xl border border-gray-700 p-4">
+        <h3 class="text-sm font-semibold text-white mb-3">Informações</h3>
+        <div class="space-y-3">
+          <div>
+            <p class="text-xs text-gray-500">Status</p>
+            {% if conversation.status == 'bot_active' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-300">Bot Ativo</span>
+            {% elif conversation.status == 'waiting_human' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/20 text-orange-300">Aguardando Humano</span>
+            {% elif conversation.status == 'closed' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">Fechado</span>
+            {% endif %}
+          </div>
+          <div>
+            <p class="text-xs text-gray-500">Mensagens não lidas</p>
+            <p class="text-sm text-white">{{ conversation.unread_count }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500">Criado em</p>
+            <p class="text-sm text-white">{{ conversation.created_at|date:"d/m/Y H:i" }}</p>
+          </div>
+          {% if conversation.assigned_to %}
+          <div>
+            <p class="text-xs text-gray-500">Atendente</p>
+            <p class="text-sm text-white">{{ conversation.assigned_to.get_full_name|default:conversation.assigned_to.username }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="bg-gray-800 rounded-xl border border-gray-700 p-4">
+        <h3 class="text-sm font-semibold text-white mb-3">Ações</h3>
+        <div class="space-y-2">
+          {% if conversation.status == 'bot_active' %}
+          <form method="post" action="{% url 'ai_agent:conversation_handoff' conversation.pk %}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-semibold rounded-lg transition text-sm">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+              </svg>
+              Assumir Atendimento
+            </button>
+          </form>
+          {% endif %}
+
+          {% if conversation.status != 'closed' %}
+          <form method="post" action="{% url 'ai_agent:conversation_close' conversation.pk %}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition text-sm font-medium">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+              </svg>
+              Fechar Conversa
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function conversationDetail() {
+  return {
+    newMessage: '',
+    sending: false,
+  };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('messages-container');
+  if (container) container.scrollTop = container.scrollHeight;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}{{ task.title }} - Tarefas{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'tasks:list' %}" class="inline-flex items-center text-sm text-gray-400 hover:text-yellow-400 transition-colors mb-4">
+        <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+        Voltar para Tarefas
+    </a>
+    <h1 class="text-2xl font-bold text-white">{{ task.title }}</h1>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="bg-gray-800 rounded-2xl p-6">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-gray-700">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                    {% if task.status == 'pending' %}bg-yellow-500/20 text-yellow-400 border border-yellow-500/30
+                    {% elif task.status == 'in_progress' %}bg-blue-500/20 text-blue-400 border border-blue-500/30
+                    {% else %}bg-green-500/20 text-green-400 border border-green-500/30{% endif %}">
+                    {{ task.get_status_display }}
+                </span>
+
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                    {% if task.priority == 'urgent' %}bg-red-500/20 text-red-400 border border-red-500/30
+                    {% elif task.priority == 'high' %}bg-orange-500/20 text-orange-400 border border-orange-500/30
+                    {% elif task.priority == 'medium' %}bg-blue-500/20 text-blue-400 border border-blue-500/30
+                    {% else %}bg-gray-500/20 text-gray-400 border border-gray-500/30{% endif %}">
+                    {% if task.priority == 'urgent' %}
+                    <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                    {% elif task.priority == 'high' %}
+                    <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
+                    {% elif task.priority == 'medium' %}
+                    <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" /></svg>
+                    {% else %}
+                    <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                    {% endif %}
+                    {{ task.get_priority_display }}
+                </span>
+
+                {% if task.is_overdue %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-500/20 text-red-400 border border-red-500/30">
+                    <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Atrasada
+                </span>
+                {% endif %}
+            </div>
+
+            {% if task.description %}
+            <div class="mb-6">
+                <h3 class="text-sm font-medium text-gray-400 mb-2">Descrição</h3>
+                <p class="text-gray-300 whitespace-pre-wrap">{{ task.description }}</p>
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-gray-700/50 rounded-xl p-4">
+                    <h3 class="text-sm font-medium text-gray-400 mb-1">Tipo</h3>
+                    <p class="text-white font-medium">{{ task.get_task_type_display }}</p>
+                </div>
+
+                <div class="bg-gray-700/50 rounded-xl p-4">
+                    <h3 class="text-sm font-medium text-gray-400 mb-1">Data de Vencimento</h3>
+                    <p class="font-medium {% if task.is_overdue %}text-red-400{% else %}text-white{% endif %}">
+                        {% if task.due_date %}
+                            {{ task.due_date|date:"d/m/Y H:i" }}
+                        {% else %}
+                            <span class="text-gray-500">Não definida</span>
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="bg-gray-700/50 rounded-xl p-4">
+                    <h3 class="text-sm font-medium text-gray-400 mb-1">Responsável</h3>
+                    <p class="text-white font-medium">{{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</p>
+                </div>
+
+                <div class="bg-gray-700/50 rounded-xl p-4">
+                    <h3 class="text-sm font-medium text-gray-400 mb-1">Contato</h3>
+                    {% if task.contact %}
+                    <a href="{% url 'contacts:detail' pk=task.contact.pk %}" class="text-yellow-400 hover:text-yellow-300 font-medium transition-colors">{{ task.contact.name }}</a>
+                    {% else %}
+                    <p class="text-gray-500">Nenhum</p>
+                    {% endif %}
+                </div>
+
+                <div class="bg-gray-700/50 rounded-xl p-4">
+                    <h3 class="text-sm font-medium text-gray-400 mb-1">Criado em</h3>
+                    <p class="text-white">{{ task.created_at|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="space-y-4">
+        <div class="bg-gray-800 rounded-2xl p-6">
+            <h3 class="text-sm font-medium text-gray-400 mb-4">Ações</h3>
+            <div class="space-y-3">
+                <form method="post" action="{% url 'tasks:toggle_status' pk=task.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium text-sm transition-colors
+                        {% if task.status == 'completed' %}bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/30
+                        {% elif task.status == 'in_progress' %}bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30
+                        {% else %}bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 border border-yellow-500/30{% endif %}">
+                        {% if task.status == 'completed' %}
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Concluída
+                        {% elif task.status == 'in_progress' %}
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Concluir
+                        {% else %}
+                        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" /></svg>
+                        Iniciar
+                        {% endif %}
+                    </button>
+                </form>
+
+                <a href="{% url 'tasks:edit' pk=task.pk %}" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium text-sm transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                    Editar
+                </a>
+
+                <a href="{% url 'tasks:delete' pk=task.pk %}" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg font-medium text-sm transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                    Excluir
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

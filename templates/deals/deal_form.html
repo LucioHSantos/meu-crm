@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mx-auto max-w-3xl space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white">{% if form.instance.pk %}Editar Negócio{% else %}Novo Negócio{% endif %}</h1>
+    <p class="mt-1 text-sm text-gray-400">{% if form.instance.pk %}Atualize as informações do negócio{% else %}Preencha os dados para criar um novo negócio{% endif %}</p>
+  </div>
+
+  <form method="post" class="bg-gray-800 rounded-2xl p-6 space-y-6">
+    {% csrf_token %}
+
+    {% if form.errors %}
+    <div class="rounded-xl bg-red-500/10 border border-red-500/20 p-4">
+      <div class="flex items-center gap-2 mb-2">
+        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+        <span class="text-sm font-medium text-red-400">Corrija os erros abaixo</span>
+      </div>
+      {% for field, errors in form.errors.items %}
+      <p class="text-xs text-red-400 ml-7">{{ field }}: {{ errors.0 }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <div class="sm:col-span-2">
+        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">Título *</label>
+        {{ form.title }}
+        {% if form.title.errors %}
+        <p class="mt-1 text-xs text-red-400">{{ form.title.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.value.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">Valor (R$) *</label>
+        {{ form.value }}
+        {% if form.value.errors %}
+        <p class="mt-1 text-xs text-red-400">{{ form.value.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.priority.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">Prioridade</label>
+        {{ form.priority }}
+        {% if form.priority.errors %}
+        <p class="mt-1 text-xs text-red-400">{{ form.priority.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.stage.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">Estágio</label>
+        {{ form.stage }}
+        {% if form.stage.errors %}
+        <p class="mt-1 text-xs text-red-400">{{ form.stage.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.expected_close_date.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">Previsão de Fechamento</label>
+        {{ form.expected_close_date }}
+        {% if form.expected_close_date.errors %}
+        <p class="mt-1 text-xs text-red-400">{{ form.expected_close_date.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.contact.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">Contato</label>
+        {{ form.contact }}
+        {% if form.contact.errors %}
+        <p class="mt-1 text-xs text-red-400">{{ form.contact.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label for="{{ form.assigned_to.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">Responsável</label>
+        {{ form.assigned_to }}
+        {% if form.assigned_to.errors %}
+        <p class="mt-1 text-xs text-red-400">{{ form.assigned_to.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div class="sm:col-span-2">
+        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-1">Descrição</label>
+        {{ form.description }}
+        {% if form.description.errors %}
+        <p class="mt-1 text-xs text-red-400">{{ form.description.errors.0 }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-3 border-t border-gray-700 pt-6">
+      <a href="{% url 'deals:list' %}"
+        class="rounded-lg bg-gray-700 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-600 transition">
+        Cancelar
+      </a>
+      <button type="submit"
+        class="inline-flex items-center gap-2 rounded-lg bg-yellow-500 px-6 py-2.5 text-sm font-medium text-gray-900 hover:bg-yellow-400 transition">
+        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+        </svg>
+        Salvar
+      </button>
+    </div>
+  </form>
+</div>
+
+<style>
+  #id_title, #id_value, #id_description {
+    width: 100%;
+    border-radius: 0.5rem;
+    background-color: rgb(55 65 81);
+    border-color: rgb(75 85 99);
+    color: white;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  #id_title:focus, #id_value:focus, #id_description:focus {
+    border-color: rgb(234 179 8);
+    outline: none;
+    ring: 1px;
+    --tw-ring-color: rgb(234 179 8);
+    box-shadow: 0 0 0 1px rgb(234 179 8);
+  }
+  #id_value {
+    appearance: none;
+  }
+  #id_description {
+    min-height: 80px;
+  }
+  select[name="stage"], select[name="priority"], select[name="contact"], select[name="assigned_to"],
+  #id_stage, #id_priority, #id_contact, #id_assigned_to, #id_expected_close_date {
+    width: 100%;
+    border-radius: 0.5rem;
+    background-color: rgb(55 65 81);
+    border-color: rgb(75 85 99);
+    color: white;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  select[name="stage"]:focus, select[name="priority"]:focus, select[name="contact"]:focus, select[name="assigned_to"]:focus,
+  #id_stage:focus, #id_priority:focus, #id_contact:focus, #id_assigned_to:focus, #id_expected_close_date:focus {
+    border-color: rgb(234 179 8);
+    outline: none;
+    box-shadow: 0 0 0 1px rgb(234 179 8);
+  }
+  #id_expected_close_date {
+    color-scheme: dark;
+  }
+</style>
+{% endblock content %}

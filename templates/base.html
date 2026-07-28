@@ -1,0 +1,95 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CRM{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-900 text-white min-h-screen" x-data="{ sidebarOpen: false }">
+
+    <div class="flex min-h-screen">
+        <aside class="hidden lg:flex lg:flex-col w-64 bg-gray-800 border-r border-gray-700 fixed inset-y-0 left-0 z-30">
+            <div class="flex items-center h-16 px-6 border-b border-gray-700">
+                <svg class="w-8 h-8 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
+                </svg>
+                <span class="ml-3 text-xl font-bold text-yellow-500">CRM</span>
+            </div>
+            <nav class="flex-1 px-4 py-6 space-y-1">
+                <a href="{% url 'dashboard:index' %}" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors {% if request.resolver_match.app_name == 'dashboard' %}bg-gray-700 text-yellow-500{% else %}text-gray-300{% endif %}">
+                    <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+                    Dashboard
+                </a>
+                <a href="{% url 'contacts:list' %}" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors {% if request.resolver_match.app_name == 'contacts' %}bg-gray-700 text-yellow-500{% else %}text-gray-300{% endif %}">
+                    <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
+                    Contatos
+                </a>
+                <a href="{% url 'deals:list' %}" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors {% if request.resolver_match.app_name == 'deals' %}bg-gray-700 text-yellow-500{% else %}text-gray-300{% endif %}">
+                    <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>
+                    Negócios
+                </a>
+                <a href="{% url 'tasks:list' %}" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors {% if request.resolver_match.app_name == 'tasks' %}bg-gray-700 text-yellow-500{% else %}text-gray-300{% endif %}">
+                    <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    Tarefas
+                </a>
+                <a href="{% url 'tasks:calendar' %}" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors {% if request.resolver_match.url_name == 'calendar' %}bg-gray-700 text-yellow-500{% else %}text-gray-300{% endif %}">
+                    <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+                    Calendário
+                </a>
+                <div class="pt-4 mt-4 border-t border-gray-700">
+                    <p class="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Agente IA</p>
+                </div>
+                <a href="{% url 'ai_agent:config' %}" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors {% if request.resolver_match.app_name == 'ai_agent' and request.resolver_match.url_name == 'config' %}bg-gray-700 text-yellow-500{% else %}text-gray-300{% endif %}">
+                    <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>
+                    Configuração
+                </a>
+                <a href="{% url 'ai_agent:knowledge_list' %}" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors {% if request.resolver_match.url_name in 'knowledge_list,knowledge_create,knowledge_edit,knowledge_bulk' %}bg-gray-700 text-yellow-500{% else %}text-gray-300{% endif %}">
+                    <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+                    Base de Conhecimento
+                </a>
+                <a href="{% url 'ai_agent:training_list' %}" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors {% if request.resolver_match.url_name in 'training_list,training_create,training_test' %}bg-gray-700 text-yellow-500{% else %}text-gray-300{% endif %}">
+                    <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" /></svg>
+                    Treinamento
+                </a>
+                <a href="{% url 'ai_agent:conversation_list' %}" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors {% if request.resolver_match.url_name in 'conversation_list,conversation_detail' %}bg-gray-700 text-yellow-500{% else %}text-gray-300{% endif %}">
+                    <svg class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" /></svg>
+                    Conversas WhatsApp
+                </a>
+            </nav>
+        </aside>
+
+        <div class="flex-1 lg:ml-64">
+            <header class="sticky top-0 z-20 flex items-center h-16 px-6 bg-gray-900 border-b border-gray-700">
+                <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden mr-4 text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+                </button>
+                <div class="flex-1"></div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-400">{{ request.user.get_full_name|default:request.user.username }}</span>
+                </div>
+            </header>
+
+            {% if messages %}
+            <div class="px-6 pt-4 space-y-2">
+                {% for message in messages %}
+                <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)" x-transition class="flex items-center p-4 rounded-lg {% if message.tags == 'success' %}bg-green-500/10 border border-green-500/30 text-green-400{% elif message.tags == 'error' %}bg-red-500/10 border border-red-500/30 text-red-400{% else %}bg-blue-500/10 border border-blue-500/30 text-blue-400{% endif %}">
+                    <span class="flex-1 text-sm">{{ message }}</span>
+                    <button @click="show = false" class="ml-4 opacity-70 hover:opacity-100">&times;</button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <main class="p-6">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

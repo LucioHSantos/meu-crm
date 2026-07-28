@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Usuario - CRM Pro{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-white">Editar Usuario</h1>
+        <p class="text-gray-400 mt-1">Atualize os dados de {{ edited_user.get_full_name|default:edited_user.username }}</p>
+    </div>
+
+    <div class="bg-gray-800 rounded-2xl p-6">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label for="id_username" class="block text-sm font-medium text-gray-300 mb-1">Usuario</label>
+                    <input type="text" name="username" id="id_username" value="{{ form.username.value|default:'' }}" required
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    {% if form.username.errors %}
+                    <p class="mt-1 text-sm text-red-400">{{ form.username.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                    <input type="email" name="email" id="id_email" value="{{ form.email.value|default:'' }}" required
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    {% if form.email.errors %}
+                    <p class="mt-1 text-sm text-red-400">{{ form.email.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_first_name" class="block text-sm font-medium text-gray-300 mb-1">Nome</label>
+                    <input type="text" name="first_name" id="id_first_name" value="{{ form.first_name.value|default:'' }}" required
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    {% if form.first_name.errors %}
+                    <p class="mt-1 text-sm text-red-400">{{ form.first_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_last_name" class="block text-sm font-medium text-gray-300 mb-1">Sobrenome</label>
+                    <input type="text" name="last_name" id="id_last_name" value="{{ form.last_name.value|default:'' }}" required
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    {% if form.last_name.errors %}
+                    <p class="mt-1 text-sm text-red-400">{{ form.last_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_phone" class="block text-sm font-medium text-gray-300 mb-1">Telefone</label>
+                    <input type="text" name="phone" id="id_phone" value="{{ form.phone.value|default:'' }}"
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    {% if form.phone.errors %}
+                    <p class="mt-1 text-sm text-red-400">{{ form.phone.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label for="id_role" class="block text-sm font-medium text-gray-300 mb-1">Funcao</label>
+                    <select name="role" id="id_role"
+                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        <option value="salesperson" {% if form.role.value == 'salesperson' %}selected{% endif %}>Vendedor</option>
+                        <option value="manager" {% if form.role.value == 'manager' %}selected{% endif %}>Gerente</option>
+                        <option value="admin" {% if form.role.value == 'admin' %}selected{% endif %}>Admin</option>
+                    </select>
+                    {% if form.role.errors %}
+                    <p class="mt-1 text-sm text-red-400">{{ form.role.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <label for="id_avatar" class="block text-sm font-medium text-gray-300 mb-1">Avatar</label>
+                    <input type="file" name="avatar" id="id_avatar" accept="image/*"
+                           class="w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-yellow-500 file:text-black hover:file:bg-yellow-600 file:cursor-pointer">
+                    {% if form.avatar.errors %}
+                    <p class="mt-1 text-sm text-red-400">{{ form.avatar.errors.0 }}</p>
+                    {% endif %}
+                    {% if edited_user.avatar %}
+                    <div class="mt-2">
+                        <img src="{{ edited_user.avatar.url }}" alt="Avatar atual" class="w-16 h-16 rounded-full object-cover border-2 border-gray-600">
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="mt-5 rounded-lg p-3 bg-red-500/20 border border-red-500/30">
+                {% for error in form.non_field_errors %}
+                <p class="text-sm text-red-400">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-gray-700">
+                <a href="{% url 'accounts:user_list' %}"
+                   class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    Cancelar
+                </a>
+                <button type="submit"
+                        class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-4 py-2 rounded-lg text-sm transition-colors">
+                    Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

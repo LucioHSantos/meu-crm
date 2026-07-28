@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Calendário{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+    <h1 class="text-2xl font-bold text-white">Calendário</h1>
+    <a href="{% url 'tasks:create' %}" class="inline-flex items-center px-4 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-semibold rounded-lg transition-colors text-sm">
+        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        Nova Tarefa
+    </a>
+</div>
+
+<div class="bg-gray-800 rounded-2xl overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-700">
+        <a href="{% url 'tasks:calendar' %}?month={% if month == 1 %}12{% else %}{{ month|add:"-1" }}{% endif %}&year={% if month == 1 %}{{ year|add:"-1" }}{% else %}{{ year }}{% endif %}" class="inline-flex items-center px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm">
+            <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+            Mês Anterior
+        </a>
+
+        <h2 class="text-lg font-bold text-white">{{ month_name }} {{ year }}</h2>
+
+        <a href="{% url 'tasks:calendar' %}?month={% if month == 12 %}1{% else %}{{ month|add:"1" }}{% endif %}&year={% if month == 12 %}{{ year|add:"1" }}{% else %}{{ year }}{% endif %}" class="inline-flex items-center px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm">
+            Próximo Mês
+            <svg class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-7 border-b border-gray-700">
+        <div class="px-2 py-3 text-center text-xs font-semibold text-gray-400 uppercase">Dom</div>
+        <div class="px-2 py-3 text-center text-xs font-semibold text-gray-400 uppercase">Seg</div>
+        <div class="px-2 py-3 text-center text-xs font-semibold text-gray-400 uppercase">Ter</div>
+        <div class="px-2 py-3 text-center text-xs font-semibold text-gray-400 uppercase">Qua</div>
+        <div class="px-2 py-3 text-center text-xs font-semibold text-gray-400 uppercase">Qui</div>
+        <div class="px-2 py-3 text-center text-xs font-semibold text-gray-400 uppercase">Sex</div>
+        <div class="px-2 py-3 text-center text-xs font-semibold text-gray-400 uppercase">Sáb</div>
+    </div>
+
+    {% for week in calendar_data %}
+    <div class="grid grid-cols-7 border-b border-gray-700 last:border-b-0">
+        {% for cell in week %}
+        <div class="min-h-[100px] p-2 border-r border-gray-700 last:border-r-0
+            {% if cell.day == 0 %}bg-gray-900/50{% endif %}
+            {% if cell.day != 0 and today.day == cell.day and today.month == month and today.year == year %}ring-2 ring-inset ring-yellow-500 bg-gray-700/30{% endif %}">
+            {% if cell.day != 0 %}
+            <span class="text-sm font-medium text-gray-400">{{ cell.day }}</span>
+
+            {% if cell.tasks %}
+            <div class="mt-1 space-y-1">
+                {% for task in cell.tasks|slice:":3" %}
+                <a href="{% url 'tasks:detail' pk=task.pk %}" class="block text-xs rounded px-1.5 py-0.5 truncate transition-colors
+                    {% if task.priority == 'urgent' %}bg-red-500/20 text-red-400 hover:bg-red-500/30
+                    {% elif task.priority == 'high' %}bg-orange-500/20 text-orange-400 hover:bg-orange-500/30
+                    {% elif task.priority == 'medium' %}bg-blue-500/20 text-blue-400 hover:bg-blue-500/30
+                    {% else %}bg-gray-500/20 text-gray-400 hover:bg-gray-500/30{% endif %}">
+                    {{ task.title|truncatewords:4 }}
+                </a>
+                {% endfor %}
+                {% if cell.tasks|length > 3 %}
+                <span class="block text-xs text-gray-500 px-1.5">+{{ cell.tasks|length|add:"-3" }} mais</span>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+<div class="flex items-center gap-6 mt-4 text-xs text-gray-400">
+    <div class="flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Urgente
+    </div>
+    <div class="flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span> Alta
+    </div>
+    <div class="flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Média
+    </div>
+    <div class="flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-gray-500"></span> Baixa
+    </div>
+</div>
+{% endblock %}
