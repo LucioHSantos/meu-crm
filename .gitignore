@@ -7,6 +7,7 @@ __pycache__/
 staticfiles/
 static/admin/
 static/rest_framework/
+media/
 *.log
 .DS_Store
 .idea/
