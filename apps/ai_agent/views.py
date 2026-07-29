@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import tempfile
+import time
 
 from django.conf import settings as django_settings
 from django.contrib import messages
@@ -677,6 +678,7 @@ def _process_incoming_message(phone_number, message_body, sender_name, whatsapp_
     conversation.unread_count += 1
     conversation.save()
 
+    time.sleep(28)
     send_whatsapp_message(phone_number, ai_response)
 
 
