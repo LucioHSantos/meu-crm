@@ -557,6 +557,69 @@ def webhook(request):
     return HttpResponseBadRequest('Method not allowed')
 
 
+@csrf_exempt
+def bridge_incoming(request):
+    if request.method != 'POST':
+        return HttpResponseBadRequest('POST required')
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest('Invalid JSON')
+
+    phone_number = data.get('phone_number', '')
+    message_body = data.get('message_body', '')
+    sender_name = data.get('sender_name', '')
+    whatsapp_message_id = data.get('whatsapp_message_id', '')
+
+    if phone_number and message_body:
+        _process_incoming_message(
+            phone_number=phone_number,
+            message_body=message_body,
+            sender_name=sender_name,
+            whatsapp_message_id=whatsapp_message_id,
+        )
+
+    return HttpResponse('OK')
+
+
+def _bridge_url():
+    return getattr(django_settings, 'WHATSAPP_BRIDGE_URL', 'http://127.0.0.1:3001')
+
+
+@login_required
+def whatsapp_page(request):
+    return render(request, 'ai_agent/whatsapp.html')
+
+
+@login_required
+def whatsapp_status_api(request):
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            r = client.get(f'{_bridge_url()}/status')
+            bridge_status = r.json()
+    except Exception:
+        bridge_status = {'status': 'unreachable', 'hasQr': False}
+
+    can_connect = bridge_status.get('status') == 'connected'
+
+    return JsonResponse({
+        'status': bridge_status.get('status', 'unreachable'),
+        'hasQr': bridge_status.get('hasQr', False),
+        'can_send': can_connect,
+    })
+
+
+@login_required
+def whatsapp_qr_api(request):
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            r = client.get(f'{_bridge_url()}/qr')
+            data = r.json()
+            return JsonResponse(data)
+    except Exception:
+        return JsonResponse({'error': 'Bridge unreachable'}, status=503)
+
+
 def _process_incoming_message(phone_number, message_body, sender_name, whatsapp_message_id):
     from apps.contacts.models import Contact
 
@@ -681,12 +744,26 @@ def _get_ai_response(agent, user_message, conversation=None):
 
 
 def send_whatsapp_message(phone_number, message):
+    bridge_url = _bridge_url()
+
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            r = client.post(f'{bridge_url}/send', json={
+                'to': phone_number,
+                'message': message,
+            })
+            if r.status_code == 200:
+                logger.info('WhatsApp message sent via bridge to %s', phone_number)
+                return
+    except Exception:
+        logger.info('Bridge unavailable, falling back to Meta API')
+
     phone_number_id = getattr(django_settings, 'WHATSAPP_PHONE_NUMBER_ID', '')
     access_token = getattr(django_settings, 'WHATSAPP_ACCESS_TOKEN', '')
     api_version = getattr(django_settings, 'WHATSAPP_API_VERSION', 'v18.0')
 
     if not phone_number_id or not access_token:
-        logger.warning('WhatsApp credentials not configured')
+        logger.warning('WhatsApp credentials not configured - message not sent')
         return
 
     url = f'https://graph.facebook.com/{api_version}/{phone_number_id}/messages'
@@ -707,6 +784,6 @@ def send_whatsapp_message(phone_number, message):
         with httpx.Client(timeout=30.0) as client:
             response = client.post(url, json=payload, headers=headers)
             response.raise_for_status()
-            logger.info('WhatsApp message sent to %s', phone_number)
+            logger.info('WhatsApp message sent via Meta API to %s', phone_number)
     except Exception as e:
         logger.exception('Failed to send WhatsApp message: %s', e)

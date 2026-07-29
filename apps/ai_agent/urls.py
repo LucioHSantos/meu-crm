@@ -24,4 +24,8 @@ urlpatterns = [
     path('conversations/<int:pk>/handoff/', views.conversation_handoff, name='conversation_handoff'),
     path('conversations/<int:pk>/close/', views.conversation_close, name='conversation_close'),
     path('webhook/', views.webhook, name='webhook'),
+    path('bridge/incoming/', views.bridge_incoming, name='bridge_incoming'),
+    path('whatsapp/', views.whatsapp_page, name='whatsapp'),
+    path('whatsapp/status/', views.whatsapp_status_api, name='whatsapp_status'),
+    path('whatsapp/qr/', views.whatsapp_qr_api, name='whatsapp_qr'),
 ]
