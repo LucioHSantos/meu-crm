@@ -28,4 +28,8 @@ urlpatterns = [
     path('whatsapp/', views.whatsapp_page, name='whatsapp'),
     path('whatsapp/status/', views.whatsapp_status_api, name='whatsapp_status'),
     path('whatsapp/qr/', views.whatsapp_qr_api, name='whatsapp_qr'),
+    path('rules/', views.business_rule_list, name='business_rule_list'),
+    path('rules/create/', views.business_rule_create, name='business_rule_create'),
+    path('rules/<int:pk>/edit/', views.business_rule_edit, name='business_rule_edit'),
+    path('rules/<int:pk>/delete/', views.business_rule_delete, name='business_rule_delete'),
 ]

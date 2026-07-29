@@ -24,8 +24,9 @@ from .forms import (
     KnowledgeBulkForm,
     KnowledgeDocumentForm,
     KnowledgeURLForm,
+    BusinessRuleForm,
 )
-from .models import AIAgent, KnowledgeBase, KnowledgeDocument, TrainingData, Conversation, Message
+from .models import AIAgent, KnowledgeBase, KnowledgeDocument, TrainingData, BusinessRule, Conversation, Message
 
 User = get_user_model()
 
@@ -320,6 +321,58 @@ def knowledge_document_delete(request, pk):
     doc.delete()
     messages.success(request, 'Document deleted.')
     return redirect('ai_agent:knowledge_list')
+
+
+@login_required
+def business_rule_list(request):
+    agent = _get_or_create_agent()
+    rules = BusinessRule.objects.filter(agent=agent).order_by('-priority', 'title')
+    return render(request, 'ai_agent/business_rule_list.html', {'rules': rules})
+
+
+@login_required
+def business_rule_create(request):
+    agent = _get_or_create_agent()
+    if request.method == 'POST':
+        form = BusinessRuleForm(request.POST)
+        if form.is_valid():
+            rule = form.save(commit=False)
+            rule.agent = agent
+            rule.save()
+            messages.success(request, f'Regra criada: {rule.title}')
+            return redirect('ai_agent:business_rule_list')
+        else:
+            messages.error(request, 'Corrija os erros abaixo.')
+    else:
+        form = BusinessRuleForm()
+    return render(request, 'ai_agent/business_rule_form.html', {'form': form, 'title': 'Nova Regra'})
+
+
+@login_required
+def business_rule_edit(request, pk):
+    agent = _get_or_create_agent()
+    rule = get_object_or_404(BusinessRule, pk=pk, agent=agent)
+    if request.method == 'POST':
+        form = BusinessRuleForm(request.POST, instance=rule)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Regra atualizada: {rule.title}')
+            return redirect('ai_agent:business_rule_list')
+        else:
+            messages.error(request, 'Corrija os erros abaixo.')
+    else:
+        form = BusinessRuleForm(instance=rule)
+    return render(request, 'ai_agent/business_rule_form.html', {'form': form, 'title': 'Editar Regra'})
+
+
+@login_required
+@require_POST
+def business_rule_delete(request, pk):
+    agent = _get_or_create_agent()
+    rule = get_object_or_404(BusinessRule, pk=pk, agent=agent)
+    rule.delete()
+    messages.success(request, 'Regra excluída.')
+    return redirect('ai_agent:business_rule_list')
 
 
 @login_required
@@ -707,7 +760,13 @@ def _get_ai_response(agent, user_message, conversation=None):
     if agent.business_description:
         business_info += f"\nDescription: {agent.business_description}"
 
+    business_rules = BusinessRule.objects.filter(agent=agent, is_active=True).order_by('-priority', 'title')
+
     system_prompt = agent.system_prompt or 'You are a helpful sales and support assistant.'
+
+    if business_rules:
+        rules_text = '\n'.join(f'[{r.title}] {r.content}' for r in business_rules)
+        system_prompt += f"\n\nBUSINESS RULES (must follow these strictly):\n{rules_text}"
 
     if knowledge_text:
         system_prompt += f"\n\nKnowledge Base:{knowledge_text}"

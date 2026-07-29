@@ -64,6 +64,24 @@ class TrainingData(models.Model):
         return f"Training: {self.input_message[:60]}"
 
 
+class BusinessRule(models.Model):
+    agent = models.ForeignKey(AIAgent, on_delete=models.CASCADE, related_name='business_rules')
+    title = models.CharField(max_length=300, verbose_name='Título')
+    content = models.TextField(verbose_name='Conteúdo/Instrução')
+    priority = models.IntegerField(default=0, help_text='Maior número = maior prioridade no prompt')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-priority', 'title']
+        verbose_name = 'Regra do Negócio'
+        verbose_name_plural = 'Regras do Negócio'
+
+    def __str__(self):
+        return self.title
+
+
 class KnowledgeDocument(models.Model):
     CATEGORY_CHOICES = KnowledgeBase.CATEGORY_CHOICES
 

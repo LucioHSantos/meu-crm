@@ -50,7 +50,10 @@ function createClient() {
     try {
       await fetch(DJANGO_WEBHOOK, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Forwarded-Proto': 'https',
+        },
         body: JSON.stringify({
           phone_number: msg.from.replace('@c.us', ''),
           message_body: msg.body,

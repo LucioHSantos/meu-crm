@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 
-from .models import AIAgent, KnowledgeBase, KnowledgeDocument, TrainingData
+from .models import AIAgent, KnowledgeBase, KnowledgeDocument, TrainingData, BusinessRule
 
 User = get_user_model()
 
@@ -138,6 +138,31 @@ class ConversationFilterForm(forms.Form):
             'class': SELECT_CLASS,
         }),
     )
+
+
+class BusinessRuleForm(forms.ModelForm):
+    class Meta:
+        model = BusinessRule
+        fields = ['title', 'content', 'priority', 'is_active']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'Ex: Política de Devolução',
+            }),
+            'content': forms.Textarea(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'Descreva a regra ou instrução em detalhes...',
+                'rows': 5,
+            }),
+            'priority': forms.NumberInput(attrs={
+                'class': INPUT_CLASS,
+                'min': '0',
+                'placeholder': '10',
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'w-5 h-5 text-yellow-500 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500',
+            }),
+        }
 
 
 class KnowledgeBulkForm(forms.Form):
