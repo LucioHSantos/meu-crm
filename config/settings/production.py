@@ -2,7 +2,7 @@ from .base import *
 
 DEBUG = False
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='yourdomain.com').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='yourdomain.com').split(',') + ['localhost', '127.0.0.1']
 
 DATABASES = {
     'default': {
