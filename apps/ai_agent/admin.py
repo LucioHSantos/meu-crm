@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AIAgent, Conversation, KnowledgeBase, Message, TrainingData
+from .models import AIAgent, Conversation, KnowledgeBase, KnowledgeDocument, Message, TrainingData
 
 
 @admin.register(AIAgent)
@@ -33,6 +33,13 @@ class MessageAdmin(admin.ModelAdmin):
     @admin.display(description='Content')
     def short_content(self, obj):
         return obj.content[:50]
+
+
+@admin.register(KnowledgeDocument)
+class KnowledgeDocumentAdmin(admin.ModelAdmin):
+    list_display = ('title', 'category', 'filename', 'is_active', 'agent')
+    list_filter = ('category', 'is_active')
+    search_fields = ('title', 'extracted_text')
 
 
 @admin.register(TrainingData)

@@ -9,7 +9,7 @@ class AIAgent(models.Model):
     business_description = models.TextField(blank=True, default='')
     system_prompt = models.TextField(
         blank=True,
-        default='You are a helpful assistant for a business. Answer questions politely and accurately based on the provided knowledge base.',
+        default='You are a sales and support AI assistant for a business. Your goals: 1) QUALIFY leads by asking about their needs and budget, 2) PROVIDE accurate information from the knowledge base, 3) CONVERT conversations into sales by highlighting benefits and handling objections, 4) ESCALATE to human agent when the customer asks to speak to a person. Always be professional, friendly, and persuasive. Use the knowledge base to answer accurately. If you don\'t know something, be honest and offer to connect with a human agent.',
     )
     ollama_model = models.CharField(max_length=100, default='llama3')
     temperature = models.FloatField(default=0.7)
@@ -62,6 +62,29 @@ class TrainingData(models.Model):
 
     def __str__(self):
         return f"Training: {self.input_message[:60]}"
+
+
+class KnowledgeDocument(models.Model):
+    CATEGORY_CHOICES = KnowledgeBase.CATEGORY_CHOICES
+
+    agent = models.ForeignKey(AIAgent, on_delete=models.CASCADE, related_name='documents')
+    title = models.CharField(max_length=500, blank=True, default='')
+    file = models.FileField(upload_to='knowledge_docs/%Y/%m/')
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='general')
+    extracted_text = models.TextField(blank=True, default='')
+    source_url = models.URLField(blank=True, default='')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title or f"Document {self.pk}"
+
+    def filename(self):
+        import os
+        return os.path.basename(self.file.name)
 
 
 class Conversation(models.Model):

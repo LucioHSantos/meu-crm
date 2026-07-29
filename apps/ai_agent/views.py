@@ -1,6 +1,9 @@
 import httpx
 import json
 import logging
+import os
+import re
+import tempfile
 
 from django.conf import settings as django_settings
 from django.contrib import messages
@@ -18,8 +21,10 @@ from .forms import (
     TrainingDataForm,
     ConversationFilterForm,
     KnowledgeBulkForm,
+    KnowledgeDocumentForm,
+    KnowledgeURLForm,
 )
-from .models import AIAgent, KnowledgeBase, TrainingData, Conversation, Message
+from .models import AIAgent, KnowledgeBase, KnowledgeDocument, TrainingData, Conversation, Message
 
 User = get_user_model()
 
@@ -78,10 +83,15 @@ def knowledge_list(request):
                 'count': len(cat_items),
             })
 
+    documents = KnowledgeDocument.objects.filter(agent=agent).order_by('-created_at')
+
     context = {
         'agent': agent,
         'categories': categories_with_counts,
         'total_count': items.count(),
+        'documents': documents,
+        'doc_form': KnowledgeDocumentForm(),
+        'url_form': KnowledgeURLForm(),
     }
     return render(request, 'ai_agent/knowledge_list.html', context)
 
@@ -180,6 +190,134 @@ def knowledge_bulk(request):
     else:
         messages.error(request, 'Please correct the errors below.')
 
+    return redirect('ai_agent:knowledge_list')
+
+
+def _extract_text_from_file(file_obj):
+    ext = os.path.splitext(file_obj.name)[1].lower()
+    try:
+        if ext == '.txt':
+            return file_obj.read().decode('utf-8', errors='replace')
+        elif ext == '.pdf':
+            from pypdf import PdfReader
+            reader = PdfReader(file_obj)
+            return '\n'.join(page.extract_text() for page in reader.pages if page.extract_text())
+        elif ext == '.docx':
+            import docx
+            doc = docx.Document(file_obj)
+            return '\n'.join(p.text for p in doc.paragraphs)
+    except Exception as e:
+        logger.exception(f'Error extracting text from {file_obj.name}: {e}')
+    return ''
+
+
+def _scrape_url_text(url):
+    try:
+        resp = httpx.get(url, timeout=30, follow_redirects=True)
+        resp.raise_for_status()
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        for tag in soup(['script', 'style', 'nav', 'footer', 'header']):
+            tag.decompose()
+        text = soup.get_text(separator='\n')
+        lines = [l.strip() for l in text.split('\n') if l.strip()]
+        return '\n'.join(lines[:200])
+    except Exception as e:
+        logger.exception(f'Error scraping URL {url}: {e}')
+    return ''
+
+
+def _split_text_into_items(text, max_chars=500):
+    paragraphs = [p.strip() for p in text.split('\n') if p.strip()]
+    items = []
+    current = ''
+    for p in paragraphs:
+        if len(current) + len(p) < max_chars:
+            current += '\n' + p if current else p
+        else:
+            if current:
+                items.append(current)
+            current = p
+    if current:
+        items.append(current)
+    return items
+
+
+@login_required
+def knowledge_document_upload(request):
+    agent = _get_or_create_agent()
+    if request.method == 'POST':
+        form = KnowledgeDocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            doc = form.save(commit=False)
+            doc.agent = agent
+            doc.save()
+            doc.refresh_from_db()
+            text = _extract_text_from_file(doc.file)
+            if text:
+                doc.extracted_text = text[:50000]
+                doc.save()
+                items = _split_text_into_items(text)
+                created = 0
+                for item in items[:50]:
+                    q = item[:80]
+                    a = item
+                    if not KnowledgeBase.objects.filter(agent=agent, question=q).exists():
+                        KnowledgeBase.objects.create(agent=agent, category=doc.category, question=q, answer=a)
+                        created += 1
+                messages.success(request, f'Document processed. {created} knowledge items auto-created.')
+            else:
+                messages.warning(request, 'Document uploaded but no text could be extracted.')
+            return redirect('ai_agent:knowledge_list')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = KnowledgeDocumentForm()
+    return render(request, 'ai_agent/knowledge_form.html', {'form': form, 'title': 'Upload Document'})
+
+
+@login_required
+def knowledge_learn_url(request):
+    agent = _get_or_create_agent()
+    if request.method == 'POST':
+        form = KnowledgeURLForm(request.POST)
+        if form.is_valid():
+            url = form.cleaned_data['url']
+            category = form.cleaned_data['category']
+            text = _scrape_url_text(url)
+            if text:
+                items = _split_text_into_items(text)
+                created = 0
+                for item in items[:50]:
+                    q = item[:80]
+                    a = item
+                    if not KnowledgeBase.objects.filter(agent=agent, question=q).exists():
+                        KnowledgeBase.objects.create(agent=agent, category=category, question=q, answer=a)
+                        created += 1
+                KnowledgeDocument.objects.create(
+                    agent=agent, title=f'URL: {url}', category=category,
+                    extracted_text=text[:50000], source_url=url,
+                )
+                messages.success(request, f'URL processed. {created} knowledge items auto-created.')
+            else:
+                messages.error(request, 'Could not extract content from URL.')
+            return redirect('ai_agent:knowledge_list')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = KnowledgeURLForm()
+    return render(request, 'ai_agent/knowledge_form.html', {'form': form, 'title': 'Learn from URL'})
+
+
+@login_required
+@require_POST
+def knowledge_document_delete(request, pk):
+    agent = _get_or_create_agent()
+    doc = get_object_or_404(KnowledgeDocument, pk=pk, agent=agent)
+    if doc.file:
+        doc.file.delete(save=False)
+    doc.delete()
+    messages.success(request, 'Document deleted.')
     return redirect('ai_agent:knowledge_list')
 
 
@@ -309,6 +447,19 @@ def conversation_detail(request, pk):
             )
             conversation.unread_count = 0
             conversation.save()
+            last_user_msg = messages_list.filter(sender_type='user').last()
+            if last_user_msg and len(content) > 10:
+                exists = TrainingData.objects.filter(
+                    agent=agent,
+                    input_message=last_user_msg.content[:200],
+                    expected_response=content[:200],
+                ).exists()
+                if not exists:
+                    TrainingData.objects.create(
+                        agent=agent,
+                        input_message=last_user_msg.content[:500],
+                        expected_response=content[:500],
+                    )
             messages.success(request, 'Message sent successfully.')
         else:
             messages.error(request, 'Message cannot be empty.')
@@ -483,16 +634,24 @@ def _get_ai_response(agent, user_message, conversation=None):
     for item in knowledge_items:
         knowledge_text += f"\n[{item.get_category_display()}] Q: {item.question}\nA: {item.answer}\n"
 
+    training_items = TrainingData.objects.filter(agent=agent, available=True).order_by('?')[:5]
+
     business_info = ''
     if agent.business_name:
         business_info += f"\nBusiness: {agent.business_name}"
     if agent.business_description:
         business_info += f"\nDescription: {agent.business_description}"
 
-    system_prompt = agent.system_prompt or 'You are a helpful assistant.'
+    system_prompt = agent.system_prompt or 'You are a helpful sales and support assistant.'
 
     if knowledge_text:
         system_prompt += f"\n\nKnowledge Base:{knowledge_text}"
+
+    if training_items:
+        system_prompt += "\n\nExample conversations to learn from:"
+        for t in training_items:
+            system_prompt += f"\n\nCustomer: {t.input_message}\nAssistant: {t.expected_response}"
+
     if business_info:
         system_prompt += f"\n\nBusiness Information:{business_info}"
 

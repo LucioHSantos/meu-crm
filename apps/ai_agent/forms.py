@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 
-from .models import AIAgent, KnowledgeBase, TrainingData
+from .models import AIAgent, KnowledgeBase, KnowledgeDocument, TrainingData
 
 User = get_user_model()
 
@@ -147,6 +147,45 @@ class KnowledgeBulkForm(forms.Form):
             'class': INPUT_CLASS,
             'placeholder': 'One item per line, format: question|answer',
             'rows': 10,
+        }),
+    )
+    category = forms.ChoiceField(
+        choices=KnowledgeBase.CATEGORY_CHOICES,
+        required=True,
+        widget=forms.Select(attrs={
+            'class': SELECT_CLASS,
+        }),
+    )
+
+
+class KnowledgeDocumentForm(forms.ModelForm):
+    class Meta:
+        model = KnowledgeDocument
+        fields = ['title', 'file', 'category', 'source_url']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'Document title (optional)',
+            }),
+            'file': forms.FileInput(attrs={
+                'class': 'w-full text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-yellow-500 file:text-gray-900 file:font-semibold hover:file:bg-yellow-400 cursor-pointer',
+            }),
+            'category': forms.Select(attrs={
+                'class': SELECT_CLASS,
+            }),
+            'source_url': forms.URLInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'Source URL (optional)',
+            }),
+        }
+
+
+class KnowledgeURLForm(forms.Form):
+    url = forms.URLField(
+        required=True,
+        widget=forms.URLInput(attrs={
+            'class': INPUT_CLASS,
+            'placeholder': 'https://example.com/page-to-learn',
         }),
     )
     category = forms.ChoiceField(
