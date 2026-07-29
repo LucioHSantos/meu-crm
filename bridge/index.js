@@ -14,9 +14,12 @@ let currentQr = null;
 let connectionStatus = 'disconnected';
 
 function createClient() {
-  client = new Client({
+    client = new Client({
     authStrategy: new LocalAuth({ clientId: 'crm-bridge' }),
-    puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] },
+    puppeteer: {
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+    },
   });
 
   client.on('qr', async (qr) => {
