@@ -9,6 +9,13 @@ static/admin/
 static/rest_framework/
 media/
 *.log
+bridge/node_modules/
+bridge/package-lock.json
+bridge/.cache/
+bridge/.config/
+bridge/.local/
+bridge/.wwebjs_auth/
+bridge/.wwebjs_cache/
 .DS_Store
 .idea/
 .vscode/

@@ -5,6 +5,7 @@ const { Client, LocalAuth } = pkg;
 
 const PORT = process.env.BRIDGE_PORT || 3001;
 const DJANGO_WEBHOOK = process.env.DJANGO_WEBHOOK || 'http://localhost:8000/ai-agent/bridge/incoming/';
+const SEND_TIMEOUT = 30000;
 
 const app = express();
 app.use(express.json());
@@ -12,6 +13,10 @@ app.use(express.json());
 let client = null;
 let currentQr = null;
 let connectionStatus = 'disconnected';
+
+function timeout(ms) {
+  return new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), ms));
+}
 
 function createClient() {
     client = new Client({
@@ -47,28 +52,28 @@ function createClient() {
 
   client.on('message', async (msg) => {
     if (msg.fromMe) return;
+    console.log('Message received from:', msg.from, 'body:', msg.body.slice(0, 100));
     try {
-      await fetch(DJANGO_WEBHOOK, {
+      const resp = await fetch(DJANGO_WEBHOOK, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Forwarded-Proto': 'https',
         },
         body: JSON.stringify({
-          phone_number: msg.from.replace('@c.us', ''),
+          phone_number: msg.from,
           message_body: msg.body,
           sender_name: msg._data.notifyName || '',
           whatsapp_message_id: msg.id._serialized,
           msg_type: 'text',
         }),
       });
+      if (!resp.ok) {
+        console.error('Django webhook returned', resp.status);
+      }
     } catch (e) {
       console.error('Failed to forward message to Django:', e.message);
     }
-  });
-
-  client.on('message_ack', (msg, ack) => {
-    // optional: track delivery status
   });
 }
 
@@ -95,7 +100,7 @@ app.get('/qr', async (req, res) => {
 });
 
 app.post('/send', async (req, res) => {
-  const { to, message } = req.body;
+  let { to, message } = req.body;
   if (!to || !message) {
     return res.status(400).json({ error: 'to and message are required' });
   }
@@ -103,12 +108,32 @@ app.post('/send', async (req, res) => {
     return res.status(503).json({ error: 'WhatsApp not connected' });
   }
   try {
-    const chatId = `${to}@c.us`;
-    await client.sendMessage(chatId, message);
+    const chatId = to.includes('@') ? to : `${to}@c.us`;
+    console.log('Sending to:', chatId);
+    await Promise.race([
+      client.sendMessage(chatId, message),
+      timeout(SEND_TIMEOUT),
+    ]);
+    console.log('Send OK to:', chatId);
     res.json({ success: true });
   } catch (e) {
-    console.error('Failed to send message:', e.message);
-    res.status(500).json({ error: e.message });
+    if (e.message === 'TIMEOUT') {
+      console.error('Send TIMEOUT to:', to);
+    } else {
+      console.error('Failed to send message:', e.message);
+    }
+    console.log('Reloading page after send failure...');
+    try {
+      if (client && client.pupPage) {
+        await client.pupPage.reload({ waitUntil: 'networkidle0' });
+        await new Promise(r => setTimeout(r, 5000));
+        connectionStatus = 'connected';
+        console.log('Page reloaded');
+      }
+    } catch (reloadErr) {
+      console.error('Page reload failed:', reloadErr.message);
+    }
+    res.status(500).json({ error: e.message || 'Send timeout' });
   }
 });
 

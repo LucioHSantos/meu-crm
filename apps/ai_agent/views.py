@@ -4,6 +4,8 @@ import logging
 import os
 import re
 import tempfile
+import threading
+import time
 
 from django.conf import settings as django_settings
 from django.contrib import messages
@@ -625,12 +627,16 @@ def bridge_incoming(request):
     whatsapp_message_id = data.get('whatsapp_message_id', '')
 
     if phone_number and message_body:
-        _process_incoming_message(
-            phone_number=phone_number,
-            message_body=message_body,
-            sender_name=sender_name,
-            whatsapp_message_id=whatsapp_message_id,
-        )
+        threading.Thread(
+            target=_process_incoming_message,
+            kwargs={
+                'phone_number': phone_number,
+                'message_body': message_body,
+                'sender_name': sender_name,
+                'whatsapp_message_id': whatsapp_message_id,
+            },
+            daemon=True,
+        ).start()
 
     return HttpResponse('OK')
 
@@ -660,13 +666,27 @@ def whatsapp_qr_api(request):
 def _process_incoming_message(phone_number, message_body, sender_name, whatsapp_message_id):
     from apps.contacts.models import Contact
 
-    contact, _ = Contact.objects.get_or_create(
-        phone=phone_number,
+    chat_id = phone_number if '@' in phone_number else f'{phone_number}@c.us'
+    clean_phone = phone_number.split('@')[0]
+    contact, created = Contact.objects.get_or_create(
+        phone=clean_phone,
         defaults={
-            'name': sender_name or phone_number,
+            'name': sender_name or clean_phone,
             'source': 'other',
+            'notes': f'wa_chat_id:{chat_id}',
         },
     )
+    if not created:
+        notes = contact.notes or ''
+        if f'wa_chat_id:{chat_id}' not in notes:
+            for line in notes.split('\n'):
+                if line.startswith('wa_chat_id:'):
+                    notes = notes.replace(line, f'wa_chat_id:{chat_id}')
+                    break
+            else:
+                notes += f'\nwa_chat_id:{chat_id}'
+            Contact.objects.filter(pk=contact.pk).update(notes=notes)
+            contact.notes = notes
 
     agent = _get_or_create_agent()
 
@@ -676,7 +696,9 @@ def _process_incoming_message(phone_number, message_body, sender_name, whatsapp_
         status__in=['bot_active', 'waiting_human'],
     ).first()
 
-    if conversation is None:
+    is_new = conversation is None
+
+    if is_new:
         conversation = Conversation.objects.create(
             contact=contact,
             agent=agent,
@@ -703,7 +725,7 @@ def _process_incoming_message(phone_number, message_body, sender_name, whatsapp_
         ai_response = _get_ai_response(agent, message_body, conversation=conversation)
     except Exception as e:
         logger.exception('AI response error')
-        ai_response = 'Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente mais tarde.'
+        ai_response = 'Só um momento que nosso atendente já vai te responder.'
 
     Message.objects.create(
         conversation=conversation,
@@ -714,6 +736,8 @@ def _process_incoming_message(phone_number, message_body, sender_name, whatsapp_
     conversation.unread_count += 1
     conversation.save()
 
+    if not is_new:
+        time.sleep(20)
     send_whatsapp_message(phone_number, ai_response)
 
 
@@ -725,13 +749,24 @@ def _get_ai_response(agent, user_message, conversation=None):
             role = 'assistant' if m.sender_type in ('bot', 'human_agent') else 'user'
             context_messages.append({'role': role, 'content': m.content})
 
-    knowledge_items = KnowledgeBase.objects.filter(
+    keywords = user_message.lower().split()
+
+    all_kb = KnowledgeBase.objects.filter(
         agent=agent,
         is_active=True,
     ).order_by('category', 'question')
 
+    scored = []
+    for item in all_kb:
+        text = (item.question + ' ' + item.answer).lower()
+        score = sum(kw in text for kw in keywords)
+        scored.append((score, item))
+    scored.sort(key=lambda x: -x[0])
+
+    top_kb = scored[:8]
+
     knowledge_text = ''
-    for item in knowledge_items:
+    for score, item in top_kb:
         knowledge_text += f"\n[{item.get_category_display()}] Q: {item.question}\nA: {item.answer}\n"
 
     training_items = TrainingData.objects.filter(agent=agent, available=True).order_by('?')[:5]
@@ -761,6 +796,14 @@ def _get_ai_response(agent, user_message, conversation=None):
     if business_info:
         system_prompt += f"\n\nBusiness Information:{business_info}"
 
+    system_prompt += """
+\n\nIMPORTANT INSTRUCTIONS FOR ACCURACY:
+- Only answer based on the Knowledge Base items listed above.
+- If asked about a course's duration, price, or details, look for the EXACT question in the Knowledge Base that matches that course.
+- Do NOT mix information from different courses. Each course has its own specific duration, price, and details.
+- If you cannot find the exact information in the Knowledge Base, say you don't have that specific information and offer to connect with a human.
+"""
+
     messages_list = [{'role': 'system', 'content': system_prompt}]
     messages_list.extend(context_messages)
     messages_list.append({'role': 'user', 'content': user_message})
@@ -778,7 +821,7 @@ def _get_ai_response(agent, user_message, conversation=None):
         },
     }
 
-    with httpx.Client(timeout=60.0) as client:
+    with httpx.Client(timeout=300.0) as client:
         response = client.post(f'{ollama_url}/api/chat', json=payload)
         response.raise_for_status()
         result = response.json()
@@ -802,7 +845,7 @@ def send_whatsapp_message(phone_number, message):
     payload = {
         'messaging_product': 'whatsapp',
         'recipient_type': 'individual',
-        'to': phone_number,
+        'to': phone_number.split('@')[0],
         'type': 'text',
         'text': {
             'body': message,
@@ -813,6 +856,6 @@ def send_whatsapp_message(phone_number, message):
         with httpx.Client(timeout=30.0) as client:
             response = client.post(url, json=payload, headers=headers)
             response.raise_for_status()
-            logger.info('WhatsApp message sent via 360dialog to %s', phone_number)
+            logger.info('WhatsApp message sent via 360dialog to %s', phone_number.split('@')[0])
     except Exception as e:
         logger.exception('Failed to send WhatsApp message: %s', e)
