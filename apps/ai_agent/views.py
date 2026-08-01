@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import tempfile
-import time
 
 from django.conf import settings as django_settings
 from django.contrib import messages
@@ -636,10 +635,6 @@ def bridge_incoming(request):
     return HttpResponse('OK')
 
 
-def _bridge_url():
-    return getattr(django_settings, 'WHATSAPP_BRIDGE_URL', 'http://127.0.0.1:3001')
-
-
 @login_required
 def whatsapp_page(request):
     return render(request, 'ai_agent/whatsapp.html')
@@ -647,31 +642,19 @@ def whatsapp_page(request):
 
 @login_required
 def whatsapp_status_api(request):
-    try:
-        with httpx.Client(timeout=5.0) as client:
-            r = client.get(f'{_bridge_url()}/status')
-            bridge_status = r.json()
-    except Exception:
-        bridge_status = {'status': 'unreachable', 'hasQr': False}
-
-    can_connect = bridge_status.get('status') == 'connected'
+    api_key = getattr(django_settings, 'WHATSAPP_360DIALOG_API_KEY', '')
+    configured = bool(api_key)
 
     return JsonResponse({
-        'status': bridge_status.get('status', 'unreachable'),
-        'hasQr': bridge_status.get('hasQr', False),
-        'can_send': can_connect,
+        'status': 'connected' if configured else 'disconnected',
+        'hasQr': False,
+        'can_send': configured,
     })
 
 
 @login_required
 def whatsapp_qr_api(request):
-    try:
-        with httpx.Client(timeout=5.0) as client:
-            r = client.get(f'{_bridge_url()}/qr')
-            data = r.json()
-            return JsonResponse(data)
-    except Exception:
-        return JsonResponse({'error': 'Bridge unreachable'}, status=503)
+    return JsonResponse({'error': 'QR Code no longer used. WhatsApp now uses the 360dialog (BSP) integration.'}, status=410)
 
 
 def _process_incoming_message(phone_number, message_body, sender_name, whatsapp_message_id):
@@ -731,7 +714,6 @@ def _process_incoming_message(phone_number, message_body, sender_name, whatsapp_
     conversation.unread_count += 1
     conversation.save()
 
-    time.sleep(28)
     send_whatsapp_message(phone_number, ai_response)
 
 
@@ -805,35 +787,21 @@ def _get_ai_response(agent, user_message, conversation=None):
 
 
 def send_whatsapp_message(phone_number, message):
-    bridge_url = _bridge_url()
+    api_key = getattr(django_settings, 'WHATSAPP_360DIALOG_API_KEY', '')
+    base_url = getattr(django_settings, 'WHATSAPP_360DIALOG_BASE_URL', 'https://waba-v2.360dialog.io')
 
-    try:
-        with httpx.Client(timeout=10.0) as client:
-            r = client.post(f'{bridge_url}/send', json={
-                'to': phone_number,
-                'message': message,
-            })
-            if r.status_code == 200:
-                logger.info('WhatsApp message sent via bridge to %s', phone_number)
-                return
-    except Exception:
-        logger.info('Bridge unavailable, falling back to Meta API')
-
-    phone_number_id = getattr(django_settings, 'WHATSAPP_PHONE_NUMBER_ID', '')
-    access_token = getattr(django_settings, 'WHATSAPP_ACCESS_TOKEN', '')
-    api_version = getattr(django_settings, 'WHATSAPP_API_VERSION', 'v18.0')
-
-    if not phone_number_id or not access_token:
-        logger.warning('WhatsApp credentials not configured - message not sent')
+    if not api_key:
+        logger.warning('360dialog API key not configured - message not sent')
         return
 
-    url = f'https://graph.facebook.com/{api_version}/{phone_number_id}/messages'
+    url = f'{base_url.rstrip("/")}/messages'
     headers = {
-        'Authorization': f'Bearer {access_token}',
+        'D360-API-KEY': api_key,
         'Content-Type': 'application/json',
     }
     payload = {
         'messaging_product': 'whatsapp',
+        'recipient_type': 'individual',
         'to': phone_number,
         'type': 'text',
         'text': {
@@ -845,6 +813,6 @@ def send_whatsapp_message(phone_number, message):
         with httpx.Client(timeout=30.0) as client:
             response = client.post(url, json=payload, headers=headers)
             response.raise_for_status()
-            logger.info('WhatsApp message sent via Meta API to %s', phone_number)
+            logger.info('WhatsApp message sent via 360dialog to %s', phone_number)
     except Exception as e:
         logger.exception('Failed to send WhatsApp message: %s', e)
