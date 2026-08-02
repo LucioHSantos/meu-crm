@@ -648,11 +648,15 @@ def whatsapp_page(request):
 
 @login_required
 def whatsapp_status_api(request):
-    api_key = getattr(django_settings, 'WHATSAPP_360DIALOG_API_KEY', '')
-    configured = bool(api_key)
+    meta_configured = bool(getattr(django_settings, 'WHATSAPP_PHONE_NUMBER_ID', '')) and bool(
+        getattr(django_settings, 'WHATSAPP_ACCESS_TOKEN', ''))
+    d360_configured = bool(getattr(django_settings, 'WHATSAPP_360DIALOG_API_KEY', ''))
+    configured = meta_configured or d360_configured
+    provider = 'meta' if meta_configured else ('360dialog' if d360_configured else '')
 
     return JsonResponse({
         'status': 'connected' if configured else 'disconnected',
+        'provider': provider,
         'hasQr': False,
         'can_send': configured,
     })
@@ -830,22 +834,33 @@ def _get_ai_response(agent, user_message, conversation=None):
 
 
 def send_whatsapp_message(phone_number, message):
-    api_key = getattr(django_settings, 'WHATSAPP_360DIALOG_API_KEY', '')
-    base_url = getattr(django_settings, 'WHATSAPP_360DIALOG_BASE_URL', 'https://waba-v2.360dialog.io')
+    recipient = phone_number.split('@')[0]
 
-    if not api_key:
-        logger.warning('360dialog API key not configured - message not sent')
+    if _send_via_meta_cloud(recipient, message):
         return
 
-    url = f'{base_url.rstrip("/")}/messages'
+    if _send_via_360dialog(recipient, message):
+        return
+
+    logger.warning('WhatsApp message not sent to %s: no provider configured', recipient)
+
+
+def _send_via_meta_cloud(phone_number, message):
+    phone_number_id = getattr(django_settings, 'WHATSAPP_PHONE_NUMBER_ID', '')
+    access_token = getattr(django_settings, 'WHATSAPP_ACCESS_TOKEN', '')
+    api_version = getattr(django_settings, 'WHATSAPP_API_VERSION', 'v18.0')
+
+    if not phone_number_id or not access_token:
+        return False
+
+    url = f'https://graph.facebook.com/{api_version}/{phone_number_id}/messages'
     headers = {
-        'D360-API-KEY': api_key,
+        'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json',
     }
     payload = {
         'messaging_product': 'whatsapp',
-        'recipient_type': 'individual',
-        'to': phone_number.split('@')[0],
+        'to': phone_number,
         'type': 'text',
         'text': {
             'body': message,
@@ -856,6 +871,41 @@ def send_whatsapp_message(phone_number, message):
         with httpx.Client(timeout=30.0) as client:
             response = client.post(url, json=payload, headers=headers)
             response.raise_for_status()
-            logger.info('WhatsApp message sent via 360dialog to %s', phone_number.split('@')[0])
+            logger.info('WhatsApp message sent via Meta Cloud API to %s', phone_number)
+            return True
     except Exception as e:
-        logger.exception('Failed to send WhatsApp message: %s', e)
+        logger.warning('Meta Cloud API send failed (%s), trying fallback', e)
+        return False
+
+
+def _send_via_360dialog(phone_number, message):
+    api_key = getattr(django_settings, 'WHATSAPP_360DIALOG_API_KEY', '')
+    base_url = getattr(django_settings, 'WHATSAPP_360DIALOG_BASE_URL', 'https://waba-v2.360dialog.io')
+
+    if not api_key:
+        return False
+
+    url = f'{base_url.rstrip("/")}/messages'
+    headers = {
+        'D360-API-KEY': api_key,
+        'Content-Type': 'application/json',
+    }
+    payload = {
+        'messaging_product': 'whatsapp',
+        'recipient_type': 'individual',
+        'to': phone_number,
+        'type': 'text',
+        'text': {
+            'body': message,
+        },
+    }
+
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            response = client.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+            logger.info('WhatsApp message sent via 360dialog to %s', phone_number)
+            return True
+    except Exception as e:
+        logger.exception('Failed to send WhatsApp message via 360dialog: %s', e)
+        return False
